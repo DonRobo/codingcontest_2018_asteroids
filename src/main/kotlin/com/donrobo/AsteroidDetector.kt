@@ -28,8 +28,11 @@ fun detectAsteroids(input: Input): Output {
     for (asteroid in allAsteroids.filter { it.height == 1 }) {
         asteroidGroupsWithDuplicates.filter { it.any { it.width == asteroid.width || it.height == asteroid.width } }.forEach { it += asteroid }
     }
+    for (asteroid in allAsteroids.filter { it.width == 1 && it.height == 1 }) {
+        asteroidGroupsWithDuplicates.forEach { it += asteroid }
+    }
 
-    val asteroidGroups = asteroidGroupsWithDuplicates.map { it.distinctBy { it.timestamp }.sortedBy { it.timestamp } }
+    val asteroidGroups = asteroidGroupsWithDuplicates.map { it.distinctBy { it.timestamp }.sortedBy { it.timestamp } }.filter { it.size >= 4 }
 
     val subsets = ArrayList<List<Int>>()
     asteroidGroups.forEach {
@@ -94,6 +97,21 @@ fun detectAsteroids(input: Input): Output {
                         onItsSideY = !onItsSideY
                     }
                     if (okY) {
+                        subsets += expected
+                        unaccountedFor.removeIf { it.timestamp in expected }
+                        break@orbitSearchLoop
+                    }
+                    //rotating around BOTH
+                    var onItsSide = t.width == 1 && t.height == 1
+                    var ok = true
+                    unaccountedFor.filter { it.timestamp in expected }.sortedBy { it.timestamp }.forEach {
+                        if (ok) {
+                            if (onItsSide != (it.width == 1 && it.height == 1))
+                                ok = false
+                        }
+                        onItsSide = !onItsSide
+                    }
+                    if (ok) {
                         subsets += expected
                         unaccountedFor.removeIf { it.timestamp in expected }
                         break@orbitSearchLoop
