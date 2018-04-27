@@ -54,26 +54,28 @@ fun detectAsteroids(input: Input): Output {
         }
     }
 
-    return Output(subsets.map { AsteroidOccurance(it.min()!!, it.max()!!, it.size) })
+    return Output(subsets.map { AsteroidOccurrence(it.min()!!, it.max()!!, it.size) })
 }
 
 
-data class AsteroidOccurance(val firstOccurance: Int, val lastOccurance: Int, val count: Int) {
-    fun resultOutput(): String = "$firstOccurance $lastOccurance $count"
+data class AsteroidOccurrence(val firstOccurrence: Int, val lastOccurrence: Int, val count: Int) {
+    fun resultOutput(): String = "$firstOccurrence $lastOccurrence $count"
 
 }
 
-data class Output(val asteroidOccurances: List<AsteroidOccurance>) {
+data class Output(val asteroidOccureences: List<AsteroidOccurrence>) {
 
     fun resultOutput(): String = StringBuilder().apply {
-        asteroidOccurances.sortedBy { it.firstOccurance }.forEach {
+        asteroidOccureences.sortedBy { it.firstOccurrence }.forEach {
             appendln(it.resultOutput())
         }
     }.toString()
 
 }
 
-data class Image(val timestamp: Int, val width: Int, val height: Int, val pixels: List<Int>, val rotated: Int = 0) {
+enum class RotationAxis { X, Y, Z }
+
+data class Image(val timestamp: Int, val width: Int, val height: Int, val depth: Int, val pixels: List<Int>, val rotated: Int = 0, val axis: RotationAxis = RotationAxis.Z) {
 
     private fun rows(): List<List<Int>> {
         val rows = ArrayList<List<Int>>()
@@ -116,7 +118,7 @@ data class Image(val timestamp: Int, val width: Int, val height: Int, val pixels
             }
         }
 
-        return Image(timestamp, width, rows.size, trimmedPixels)
+        return Image(timestamp, width, rows.size, depth, trimmedPixels)
     }
 
     private fun trimCols(): Image {
@@ -130,7 +132,7 @@ data class Image(val timestamp: Int, val width: Int, val height: Int, val pixels
             }
         }
 
-        return Image(timestamp, cols.size, height, trimmedPixels)
+        return Image(timestamp, cols.size, height, depth, trimmedPixels)
     }
 
     fun trim(): Image {
@@ -141,6 +143,7 @@ data class Image(val timestamp: Int, val width: Int, val height: Int, val pixels
             timestamp,
             width,
             height,
+            depth,
             pixels.map { if (it > 0) 1 else 0 }
     )
 
@@ -151,7 +154,7 @@ data class Image(val timestamp: Int, val width: Int, val height: Int, val pixels
         while (original.rotatedBy(neededRotations).pixels != pixels) {
             neededRotations++
         }
-        return Image(timestamp, width, height, pixels, neededRotations)
+        return Image(timestamp, width, height, depth, pixels, neededRotations)
     }
 
     private fun imageHash(): String = pixels.map { it.toString(16) }.joinToString()
@@ -167,13 +170,13 @@ data class Image(val timestamp: Int, val width: Int, val height: Int, val pixels
                 }
             }
 
-            Image(timestamp, height, width, newPixels, if (rotated == 3) 0 else rotated + 1)
+            Image(timestamp, height, width, depth, newPixels, if (rotated == 3) 0 else rotated + 1)
         }
         else -> if (rotations > 1) rotatedBy(1).rotatedBy(rotations - 1) else rotatedBy(rotations + 4)
     }
 
     init {
-        if (pixels.size != width * height) throw IllegalArgumentException("Invalid size")
+        if (pixels.size != width * height * depth) throw IllegalArgumentException("Invalid size")
         if (rotated !in 0..3) throw IllegalArgumentException("$rotated is invalid rotation count")
     }
 }
@@ -198,7 +201,7 @@ fun parseInput(inputStr: String): Input {
                 pixels += intensity
             }
         }
-        images += Image(timestamp = timestamp, width = colCount, height = rowCount, pixels = pixels)
+        images += Image(timestamp = timestamp, width = colCount, height = rowCount, depth = 1, pixels = pixels)
     }
 
     return Input(startObservation, endObservation, images)
