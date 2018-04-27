@@ -9,25 +9,41 @@ fun debug(message: String) {
 
 fun detectAsteroids(input: Input): Output {
     val sameAsteroids = input.images.map { it.trim().binary().rotationNormalized() }.groupBy { it.rotatedBy(-it.rotated).pixels }
-    val orbitalTimes = sameAsteroids.filter { it.value.isNotEmpty() && it.key.isNotEmpty() }.mapValues { it.value.map { it.timestamp } }
+    val orbitalTimes = sameAsteroids.filter { it.value.isNotEmpty() && it.key.isNotEmpty() }
 
     val subsets = ArrayList<List<Int>>()
 
     orbitalTimes.values.forEach {
-        val unaccountedFor = it.sorted().toMutableList()
+        val unaccountedFor = it.sortedBy { it.timestamp }.toMutableList()
         while (unaccountedFor.size >= 4) {
             val maxOrbit = (input.endObservation - input.startObservation + 1) / 3
-            val t = unaccountedFor.min()!!
+            val t = unaccountedFor.minBy { it.timestamp }!!
+            orbitSearchLoop@
             for (period in 1..maxOrbit) {
-                if (unaccountedFor.size < 4) break
+                if (unaccountedFor.size < 4) break@orbitSearchLoop
 
-                val offset = t - input.startObservation
-                if (offset > period - 1) continue
+                for (rotatingBy in 0..3) {
+                    val offset = t.timestamp - input.startObservation
+                    if (offset > period - 1) continue
 
-                val expected = (t..input.endObservation step period).map { it }
-                if (unaccountedFor.containsAll(expected)) {
-                    subsets += expected
-                    unaccountedFor.removeAll(expected)
+                    val expected = (t.timestamp..input.endObservation step period).map { it }
+                    if (unaccountedFor.map { it.timestamp }.containsAll(expected)) {
+                        var currentRotation = t
+                        var ok = true
+                        unaccountedFor.filter { it.timestamp in expected }.sortedBy { it.timestamp }.forEach {
+                            if (ok) {
+                                if (it.pixels != currentRotation.pixels) {
+                                    ok = false
+                                }
+                                currentRotation = currentRotation.rotatedBy(rotatingBy)
+                            }
+                        }
+                        if (ok) {
+                            subsets += expected
+                            unaccountedFor.removeIf { it.timestamp in expected }
+                            break@orbitSearchLoop
+                        }
+                    }
                 }
             }
             unaccountedFor.remove(t)
