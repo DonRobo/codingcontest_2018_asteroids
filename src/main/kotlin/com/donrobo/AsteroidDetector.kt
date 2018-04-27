@@ -48,7 +48,7 @@ fun detectAsteroids(input: Input): Output {
                 val expected = (t.timestamp..input.endObservation step period).map { it }
                 if (unaccountedFor.map { it.timestamp }.containsAll(expected)) {
                     //rotating around Z
-                    for (rotatingBy in 0..3) {
+                    for (rotatingBy in 0..5) {
                         var currentRotation = t
                         var ok = true
 
@@ -65,8 +65,13 @@ fun detectAsteroids(input: Input): Output {
                                 debug("actual: " + it.toString())
                                 debug("side: $newOnItSide")
                                 debug("====")
-                                if (!newOnItSide)
-                                    currentRotation = currentRotation.rotatedBy(rotatingBy)
+                                if (!newOnItSide) {
+                                    when {
+                                        rotatingBy < 4 -> currentRotation = currentRotation.rotatedBy(rotatingBy)
+                                        rotatingBy == 4 -> currentRotation = currentRotation.mirroredX()
+                                        rotatingBy == 5 -> currentRotation = currentRotation.mirroredY()
+                                    }
+                                }
                                 onItSide = !newOnItSide
                             }
                         }
@@ -189,6 +194,30 @@ data class Image(val timestamp: Int, val width: Int, val height: Int, val depth:
             Image(timestamp, height, width, depth, newPixels, if (rotated == 3) 0 else rotated + 1)
         }
         else -> if (rotations > 1) rotatedBy(1).rotatedBy(rotations - 1) else rotatedBy(rotations + 4)
+    }
+
+    fun mirroredX(): Image {
+        val newPixels = ArrayList<Int>()
+
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                newPixels += getPixel(width - 1 - x, y)
+            }
+        }
+
+        return Image(timestamp, width, height, depth, newPixels, rotated, axis)
+    }
+
+    fun mirroredY(): Image {
+        val newPixels = ArrayList<Int>()
+
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                newPixels += getPixel(x, height - 1 - y)
+            }
+        }
+
+        return Image(timestamp, width, height, depth, newPixels, rotated, axis)
     }
 
     init {
