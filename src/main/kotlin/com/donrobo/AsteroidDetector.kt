@@ -15,15 +15,12 @@ fun detectAsteroids(input: Input): Output {
 
     orbitalTimes.values.forEach {
         val unaccountedFor = it.sorted().toMutableList()
-        var foundSomething = true
-        while (unaccountedFor.size >= 4 && foundSomething) {
-            foundSomething = false
-
+        while (unaccountedFor.size >= 4) {
             val maxOrbit = (input.endObservation - input.startObservation + 1) / 3
+            val t = unaccountedFor.min()!!
             for (period in 1..maxOrbit) {
                 if (unaccountedFor.size < 4) break
 
-                val t = unaccountedFor.min()!!
                 val offset = t - input.startObservation
                 if (offset > period - 1) continue
 
@@ -31,9 +28,9 @@ fun detectAsteroids(input: Input): Output {
                 if (unaccountedFor.containsAll(expected)) {
                     subsets += expected
                     unaccountedFor.removeAll(expected)
-                    foundSomething = true
                 }
             }
+            unaccountedFor.remove(t)
         }
     }
 
