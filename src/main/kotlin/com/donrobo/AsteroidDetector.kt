@@ -8,7 +8,7 @@ fun debug(message: String) {
 }
 
 fun detectAsteroids(input: Input): Output {
-    val sameAsteroids = input.images.map { it.trim().binary() }.groupBy { it.pixels }
+    val sameAsteroids = input.images.map { it.trim().binary().rotationNormalized() }.groupBy { it.rotatedBy(-it.rotated).pixels }
     val orbitalTimes = sameAsteroids.filter { it.value.isNotEmpty() && it.key.isNotEmpty() }.mapValues { it.value.map { it.timestamp } }
 
     val subsets = ArrayList<List<Int>>()
@@ -53,7 +53,7 @@ data class Output(val asteroidOccurances: List<AsteroidOccurance>) {
 
 }
 
-data class Image(val timestamp: Int, val width: Int, val height: Int, val pixels: List<Int>) {
+data class Image(val timestamp: Int, val width: Int, val height: Int, val pixels: List<Int>, val rotated: Int = 0) {
 
     private fun rows(): List<List<Int>> {
         val rows = ArrayList<List<Int>>()
@@ -124,8 +124,37 @@ data class Image(val timestamp: Int, val width: Int, val height: Int, val pixels
             pixels.map { if (it > 0) 1 else 0 }
     )
 
+    fun rotationNormalized(): Image {
+        val rotations = (0..3).map { rotatedBy(it) }.map { Pair(it, it.imageHash()) }
+        val original = rotations.minBy { it.second }!!.first
+        var neededRotations = 0
+        while (original.rotatedBy(neededRotations).pixels != pixels) {
+            neededRotations++
+        }
+        return Image(timestamp, width, height, pixels, neededRotations)
+    }
+
+    private fun imageHash(): String = pixels.map { it.toString(16) }.joinToString()
+
+    fun rotatedBy(rotations: Int): Image = when (rotations) {
+        0 -> this
+        1 -> {
+            val newPixels = ArrayList<Int>()
+
+            for (y in 0 until width) {
+                for (x in 0 until height) {
+                    newPixels += getPixel(width - 1 - y, x)
+                }
+            }
+
+            Image(timestamp, height, width, newPixels, if (rotated == 3) 0 else rotated + 1)
+        }
+        else -> if (rotations > 1) rotatedBy(1).rotatedBy(rotations - 1) else rotatedBy(rotations + 4)
+    }
+
     init {
         if (pixels.size != width * height) throw IllegalArgumentException("Invalid size")
+        if (rotated !in 0..3) throw IllegalArgumentException("$rotated is invalid rotation count")
     }
 }
 
