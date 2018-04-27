@@ -26,13 +26,12 @@ fun detectAsteroids(input: Input): Output {
             for (period in possibleOrbits) {
                 if (unaccountedFor.size < 4) break@orbitSearchLoop
                 if ((input.endObservation - t.timestamp) / period > unaccountedFor.size) continue
+                if (offset > period - 1)
+                    continue
 
                 val expected = (t.timestamp..input.endObservation step period).map { it }
-                for (rotatingBy in 0..3) {
-                    val offset = t.timestamp - input.startObservation
-                    if (offset > period - 1) continue
-
-                    if (unaccountedFor.map { it.timestamp }.containsAll(expected)) {
+                if (unaccountedFor.map { it.timestamp }.containsAll(expected)) {
+                    for (rotatingBy in 0..3) {
                         var currentRotation = t
                         var ok = true
                         unaccountedFor.filter { it.timestamp in expected }.sortedBy { it.timestamp }.forEach {
