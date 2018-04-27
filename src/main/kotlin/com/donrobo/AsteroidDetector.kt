@@ -9,14 +9,11 @@ fun debug(message: String) {
 
 fun detectAsteroids(input: Input): Output {
     val sameAsteroids = input.images.map { it.trim().binary() }.groupBy { it.pixels }
-    return Output(sameAsteroids.filter { it.value.isNotEmpty() && it.key.isNotEmpty() }.map { occ ->
-        val timestamps = occ.value.map { it.timestamp }
-        AsteroidOccurance(
-                firstOccurance = timestamps.min()!!,
-                lastOccurance = timestamps.max()!!,
-                count = timestamps.size
-        )
-    })
+    val orbitalTimes = sameAsteroids.filter { it.value.isNotEmpty() && it.key.isNotEmpty() }.mapValues { it.value.map { it.timestamp } }
+
+    val subsets = ArrayList<List<Int>>()
+
+    return Output(subsets.map { AsteroidOccurance(it.min()!!, it.max()!!, it.size) })
 }
 
 
