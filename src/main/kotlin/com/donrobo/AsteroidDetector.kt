@@ -18,16 +18,18 @@ fun detectAsteroids(input: Input): Output {
         while (unaccountedFor.size >= 4) {
             val maxOrbit = (input.endObservation - input.startObservation + 1) / 3
             val t = unaccountedFor.minBy { it.timestamp }!!
+            val offset = t.timestamp - input.startObservation
+
+            val possibleOrbits = unaccountedFor.map { it.timestamp - t.timestamp }.filter { it in 1..maxOrbit }
+
             orbitSearchLoop@
-            for (period in 1..maxOrbit) {
+            for (period in possibleOrbits) {
                 if (unaccountedFor.size < 4) break@orbitSearchLoop
+                if ((input.endObservation - t.timestamp) / period > unaccountedFor.size) continue
 
-                for (rotatingBy in 0..3) {
-                    val offset = t.timestamp - input.startObservation
-                    if (offset > period - 1) continue
-
-                    val expected = (t.timestamp..input.endObservation step period).map { it }
-                    if (unaccountedFor.map { it.timestamp }.containsAll(expected)) {
+                val expected = (t.timestamp..input.endObservation step period).map { it }
+                if (unaccountedFor.map { it.timestamp }.containsAll(expected)) {
+                    for (rotatingBy in 0..3) {
                         var currentRotation = t
                         var ok = true
                         unaccountedFor.filter { it.timestamp in expected }.sortedBy { it.timestamp }.forEach {
