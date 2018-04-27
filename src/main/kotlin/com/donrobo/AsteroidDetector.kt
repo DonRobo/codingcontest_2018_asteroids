@@ -48,7 +48,7 @@ fun detectAsteroids(input: Input): Output {
                 val expected = (t.timestamp..input.endObservation step period).map { it }
                 if (unaccountedFor.map { it.timestamp }.containsAll(expected)) {
                     //rotating around Z
-                    for (rotatingBy in 0..5) {
+                    for (rotatingBy in 0..6) {
                         var currentRotation = t
                         var ok = true
 
@@ -70,6 +70,7 @@ fun detectAsteroids(input: Input): Output {
                                         rotatingBy < 4 -> currentRotation = currentRotation.rotatedBy(rotatingBy)
                                         rotatingBy == 4 -> currentRotation = currentRotation.mirroredX()
                                         rotatingBy == 5 -> currentRotation = currentRotation.mirroredY()
+                                        rotatingBy == 6 -> currentRotation = currentRotation.mirroredY().mirroredX()
                                     }
                                 }
                                 onItSide = !newOnItSide
