@@ -3,11 +3,14 @@ package com.donrobo
 import java.io.File
 
 fun main(args: Array<String>) {
-    val inputFile = File("src/main/resources/input/sample1.txt").readText()
-    val output = detectAsteroids(parseInput(inputFile))
-    val resultOutput = output.resultOutput()
+    val inputs = File("src/main/resources/input1")
+    inputs.listFiles().forEach { inputFile ->
+        val output = detectAsteroids(parseInput(inputFile.readText()))
+        val resultOutput = output.resultOutput()
 
-    println(resultOutput)
-    File("result.txt").writeText(resultOutput)
+        println(inputFile.name)
+        println(resultOutput)
+        File(File("output1"), inputFile.name).writeText(resultOutput)
+    }
 }
 
