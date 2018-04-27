@@ -50,6 +50,7 @@ fun detectAsteroids(input: Input): Output {
 
                 val expected = (t.timestamp..input.endObservation step period).map { it }
                 if (unaccountedFor.map { it.timestamp }.containsAll(expected)) {
+                    //rotating around Z
                     for (rotatingBy in 0..3) {
                         var currentRotation = t
                         var ok = true
@@ -66,6 +67,36 @@ fun detectAsteroids(input: Input): Output {
                             unaccountedFor.removeIf { it.timestamp in expected }
                             break@orbitSearchLoop
                         }
+                    }
+                    //rotating around X
+                    var onItsSideX = t.height == 1
+                    var okX = true
+                    unaccountedFor.filter { it.timestamp in expected }.sortedBy { it.timestamp }.forEach {
+                        if (okX) {
+                            if (onItsSideX != (it.height == 1))
+                                okX = false
+                        }
+                        onItsSideX = !onItsSideX
+                    }
+                    if (okX) {
+                        subsets += expected
+                        unaccountedFor.removeIf { it.timestamp in expected }
+                        break@orbitSearchLoop
+                    }
+                    //rotating around Y
+                    var onItsSideY = t.width == 1
+                    var okY = true
+                    unaccountedFor.filter { it.timestamp in expected }.sortedBy { it.timestamp }.forEach {
+                        if (okY) {
+                            if (onItsSideY != (it.width == 1))
+                                okY = false
+                        }
+                        onItsSideY = !onItsSideY
+                    }
+                    if (okY) {
+                        subsets += expected
+                        unaccountedFor.removeIf { it.timestamp in expected }
+                        break@orbitSearchLoop
                     }
                 }
             }
