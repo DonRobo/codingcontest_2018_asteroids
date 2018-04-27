@@ -8,12 +8,31 @@ fun debug(message: String) {
 }
 
 fun detectAsteroids(input: Input): Output {
-    val sameAsteroids = input.images.map { it.trim().binary().rotationNormalized() }.groupBy { it.rotatedBy(-it.rotated).pixels }
-    val orbitalTimes = sameAsteroids.filter { it.value.isNotEmpty() && it.key.isNotEmpty() }
+    val allAsteroids = input.images.map { it.trim().binary() }.filter { it.pixels.isNotEmpty() }
+    val asteroidGroupsWithDuplicates = ArrayList<MutableList<Image>>()
+
+    for (asteroid in allAsteroids) {
+        val rotations = (0..3).map { asteroid.rotatedBy(it).pixels }
+        val group = asteroidGroupsWithDuplicates.singleOrNull { similarAsteroids ->
+            similarAsteroids.map { it.pixels }.all { it in rotations }
+        }
+        if (group != null) {
+            group += asteroid
+        } else {
+            asteroidGroupsWithDuplicates += mutableListOf(asteroid)
+        }
+    }
+    for (asteroid in allAsteroids.filter { it.width == 1 }) {
+        asteroidGroupsWithDuplicates.filter { it.any { it.width == asteroid.height || it.height == asteroid.height } }.forEach { it += asteroid }
+    }
+    for (asteroid in allAsteroids.filter { it.height == 1 }) {
+        asteroidGroupsWithDuplicates.filter { it.any { it.width == asteroid.width || it.height == asteroid.width } }.forEach { it += asteroid }
+    }
+
+    val asteroidGroups = asteroidGroupsWithDuplicates.map { it.distinctBy { it.timestamp }.sortedBy { it.timestamp } }
 
     val subsets = ArrayList<List<Int>>()
-
-    orbitalTimes.values.forEach {
+    asteroidGroups.forEach {
         val unaccountedFor = it.sortedBy { it.timestamp }.toMutableList()
         while (unaccountedFor.size >= 4) {
             val maxOrbit = (input.endObservation - input.startObservation + 1) / 3
@@ -146,18 +165,6 @@ data class Image(val timestamp: Int, val width: Int, val height: Int, val depth:
             depth,
             pixels.map { if (it > 0) 1 else 0 }
     )
-
-    fun rotationNormalized(): Image {
-        val rotations = (0..3).map { rotatedBy(it) }.map { Pair(it, it.imageHash()) }
-        val original = rotations.minBy { it.second }!!.first
-        var neededRotations = 0
-        while (original.rotatedBy(neededRotations).pixels != pixels) {
-            neededRotations++
-        }
-        return Image(timestamp, width, height, depth, pixels, neededRotations)
-    }
-
-    private fun imageHash(): String = pixels.map { it.toString(16) }.joinToString()
 
     fun rotatedBy(rotations: Int): Image = when (rotations) {
         0 -> this
