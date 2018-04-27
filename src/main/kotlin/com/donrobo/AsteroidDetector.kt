@@ -22,17 +22,11 @@ fun detectAsteroids(input: Input): Output {
             asteroidGroupsWithDuplicates += mutableListOf(asteroid)
         }
     }
-    for (asteroid in allAsteroids.filter { it.width == 1 }) {
-        asteroidGroupsWithDuplicates.filter { it.any { it.width == asteroid.height || it.height == asteroid.height } }.forEach { it += asteroid }
-    }
-    for (asteroid in allAsteroids.filter { it.height == 1 }) {
-        asteroidGroupsWithDuplicates.filter { it.any { it.width == asteroid.width || it.height == asteroid.width } }.forEach { it += asteroid }
-    }
-    for (asteroid in allAsteroids.filter { it.width == 1 && it.height == 1 }) {
-        asteroidGroupsWithDuplicates.forEach { it += asteroid }
+    for (asteroid in allAsteroids) {
+        asteroidGroupsWithDuplicates.filter { it.any { it.width == asteroid.height || it.height == asteroid.height || it.width == asteroid.width || it.height == asteroid.width } }.forEach { it += asteroid }
     }
 
-    val asteroidGroups = asteroidGroupsWithDuplicates.map { it.distinctBy { it.timestamp }.sortedBy { it.timestamp } }.filter { it.size >= 4 }
+    val asteroidGroups = asteroidGroupsWithDuplicates.map { it.distinctBy { it.timestamp }.sortedBy { it.timestamp } }.filter { it.size >= 4 }.distinct()
 
     val subsets = ArrayList<List<Int>>()
     asteroidGroups.forEach {
@@ -57,12 +51,23 @@ fun detectAsteroids(input: Input): Output {
                     for (rotatingBy in 0..3) {
                         var currentRotation = t
                         var ok = true
+
+                        var onItSide: Boolean? = null
                         unaccountedFor.filter { it.timestamp in expected }.sortedBy { it.timestamp }.forEach {
                             if (ok) {
-                                if (it.pixels != currentRotation.pixels) {
+                                val newOnItSide = it.pixels != currentRotation.pixels
+                                if (onItSide != null && onItSide != newOnItSide) {
                                     ok = false
                                 }
-                                currentRotation = currentRotation.rotatedBy(rotatingBy)
+                                debug("====")
+                                debug("rotation: $rotatingBy")
+                                debug("wanted:" + currentRotation.toString())
+                                debug("actual: " + it.toString())
+                                debug("side: $newOnItSide")
+                                debug("====")
+                                if (!newOnItSide)
+                                    currentRotation = currentRotation.rotatedBy(rotatingBy)
+                                onItSide = !newOnItSide
                             }
                         }
                         if (ok) {
@@ -70,51 +75,6 @@ fun detectAsteroids(input: Input): Output {
                             unaccountedFor.removeIf { it.timestamp in expected }
                             break@orbitSearchLoop
                         }
-                    }
-                    //rotating around X
-                    var onItsSideX = t.height == 1
-                    var okX = true
-                    unaccountedFor.filter { it.timestamp in expected }.sortedBy { it.timestamp }.forEach {
-                        if (okX) {
-                            if (onItsSideX != (it.height == 1))
-                                okX = false
-                        }
-                        onItsSideX = !onItsSideX
-                    }
-                    if (okX) {
-                        subsets += expected
-                        unaccountedFor.removeIf { it.timestamp in expected }
-                        break@orbitSearchLoop
-                    }
-                    //rotating around Y
-                    var onItsSideY = t.width == 1
-                    var okY = true
-                    unaccountedFor.filter { it.timestamp in expected }.sortedBy { it.timestamp }.forEach {
-                        if (okY) {
-                            if (onItsSideY != (it.width == 1))
-                                okY = false
-                        }
-                        onItsSideY = !onItsSideY
-                    }
-                    if (okY) {
-                        subsets += expected
-                        unaccountedFor.removeIf { it.timestamp in expected }
-                        break@orbitSearchLoop
-                    }
-                    //rotating around BOTH
-                    var onItsSide = t.width == 1 && t.height == 1
-                    var ok = true
-                    unaccountedFor.filter { it.timestamp in expected }.sortedBy { it.timestamp }.forEach {
-                        if (ok) {
-                            if (onItsSide != (it.width == 1 && it.height == 1))
-                                ok = false
-                        }
-                        onItsSide = !onItsSide
-                    }
-                    if (ok) {
-                        subsets += expected
-                        unaccountedFor.removeIf { it.timestamp in expected }
-                        break@orbitSearchLoop
                     }
                 }
             }
