@@ -7,22 +7,105 @@ fun debug(message: String) {
     System.err.println(message)
 }
 
-data class Output(val detectedTimestamps: List<Int>) {
-    fun resultOutput(): String {
-        val stringBuilder = StringBuilder()
-        detectedTimestamps.forEach {
-            stringBuilder.appendln(it)
-        }
-        return stringBuilder.toString()
-    }
+fun detectAsteroids(input: Input): Output {
+    val sameAsteroids = input.images.map { it.trim().binary() }.groupBy { it.pixels }
+    return Output(sameAsteroids.filter { it.value.isNotEmpty() && it.key.isNotEmpty() }.map { occ ->
+        val timestamps = occ.value.map { it.timestamp }
+        AsteroidOccurance(
+                firstOccurance = timestamps.min()!!,
+                lastOccurance = timestamps.max()!!,
+                count = timestamps.size
+        )
+    })
+}
+
+
+data class AsteroidOccurance(val firstOccurance: Int, val lastOccurance: Int, val count: Int) {
+    fun resultOutput(): String = "$firstOccurance $lastOccurance $count"
 
 }
 
-fun detectAsteroids(input: Input): Output {
-    return Output(input.images.filter { it.pixels.any { it > 0 } }.map { it.timestamp })
+data class Output(val asteroidOccurances: List<AsteroidOccurance>) {
+
+    fun resultOutput(): String = StringBuilder().apply {
+        asteroidOccurances.sortedBy { it.firstOccurance }.forEach {
+            appendln(it.resultOutput())
+        }
+    }.toString()
+
 }
 
 data class Image(val timestamp: Int, val width: Int, val height: Int, val pixels: List<Int>) {
+
+    private fun rows(): List<List<Int>> {
+        val rows = ArrayList<List<Int>>()
+
+        for (y in 0 until height) {
+            val row = ArrayList<Int>()
+            for (x in 0 until width) {
+                row += getPixel(x, y)
+            }
+            rows += row
+        }
+
+        return rows
+    }
+
+    private fun cols(): List<List<Int>> {
+        val cols = ArrayList<List<Int>>()
+
+        for (x in 0 until width) {
+            val col = ArrayList<Int>()
+            for (y in 0 until height) {
+                col += getPixel(x, y)
+            }
+            cols += col
+        }
+
+        return cols
+    }
+
+    fun getPixel(x: Int, y: Int): Int = pixels[x + y * width]
+
+    private fun trimRows(): Image {
+        val rows = rows().filter { it.any { it > 0 } }
+
+        val trimmedPixels = ArrayList<Int>()
+
+        for (y in 0 until rows.size) {
+            for (x in 0 until width) {
+                trimmedPixels += rows[y][x]
+            }
+        }
+
+        return Image(timestamp, width, rows.size, trimmedPixels)
+    }
+
+    private fun trimCols(): Image {
+        val cols = cols().filter { it.any { it > 0 } }
+
+        val trimmedPixels = ArrayList<Int>()
+
+        for (y in 0 until height) {
+            for (x in 0 until cols.size) {
+                trimmedPixels += cols[x][y]
+            }
+        }
+
+        return Image(timestamp, cols.size, height, trimmedPixels)
+    }
+
+    fun trim(): Image {
+        return trimRows().trimCols()
+    }
+
+    fun binary(): Image = Image(
+            timestamp,
+            width,
+            height,
+            pixels.map { if (it > 0) 1 else 0 }
+    )
+
     init {
         if (pixels.size != width * height) throw IllegalArgumentException("Invalid size")
     }
